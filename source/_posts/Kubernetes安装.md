@@ -5,7 +5,7 @@ tags: Kubernetes
 ---
 
 ## 初始化
-```
+```bash
 hostnamectl set-hostname k8s-node
 
 modprobe overlay
@@ -38,14 +38,14 @@ systemctl unmask firewalld
 
 ## 安装Containerd
 
-```
+```bash
 dnf config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo
 dnf update
 dnf install -y containerd
 ```
 
 ## 配置Containerd
-```
+```bash
 mkdir -p /etc/containerd
 containerd config default > /etc/containerd/config.toml
 
@@ -53,7 +53,7 @@ sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.t
 ```
 
 ## 重启containerd
-```
+```bash
 systemctl daemon-reload
 systemctl restart containerd
 systemctl enable --now containerd
@@ -61,7 +61,7 @@ systemctl status containerd
 ```
 
 ## 安装kubeadm
-```
+```bash
 cat <<EOF>/etc/yum.repos.d/kubernetes.repo
 [kubernetes]
 name=Kubernetes
@@ -78,7 +78,7 @@ systemctl enable --now kubelet
 ```
 
 ## master节点执行
-```
+```bash
 kubeadm init \
 --apiserver-advertise-address=192.168.10.242 \
 --image-repository registry.aliyuncs.com/google_containers \
@@ -86,7 +86,7 @@ kubeadm init \
 --pod-network-cidr=10.244.0.0/16
 ```
 执行成功
-```
+```bash
 mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 chown $(id -u):$(id -g) $HOME/.kube/config
@@ -95,14 +95,14 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 
 ## 将其他node加入集群
 在其他节点执行
-```
+```bash
 kubeadm join 192.168.10.242:6443 --token ijblbd.bmnaf8xcl38iwxbz \
 	--discovery-token-ca-cert-hash sha256:1d76ad35d2d95c6b381ada3d03b15f230201e9e0af41db4db33700d7de604e1d 
 ```
 
 
 ## 部署CNI网络组件
-```
+```bash
 wget https://docs.projectcalico.org/manifests/calico.yaml
 
 - 修改IPV4POOL地址
