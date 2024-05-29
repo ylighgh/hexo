@@ -1,8 +1,8 @@
 ---
-title: K8S-endpoint
+title: Kubernetes-EndPoint使用示例
 date: 2024-05-29 13:29:39
 tags: Kubernetes
-categories: Kubernetes
+category_bar: ["Kubernetes"]
 ---
 
 # 创建service

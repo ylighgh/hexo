@@ -1,8 +1,8 @@
 ---
-title: Kubernetes安装
+title: Kubernetes-安装
 date: 2024-05-28 22:44:21
 tags: Kubernetes
-categories: Kubernetes
+category_bar: ["Kubernetes"]
 ---
 
 ## 初始化
