@@ -2,10 +2,12 @@
 title: Kubernetes-EndPoint使用示例
 date: 2024-05-29 13:29:39
 tags: Kubernetes
-category_bar: ["Kubernetes"]
+categories: Kubernetes
 ---
 
 # 创建service
+![](/images/k8s/endpoint.png)
+
 ```bash
 kubect apply -f - <<EOF
 apiVersion: v1
