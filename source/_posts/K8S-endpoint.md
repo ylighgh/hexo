@@ -2,6 +2,7 @@
 title: K8S-endpoint
 date: 2024-05-29 13:29:39
 tags: Kubernetes
+categories: Kubernetes
 ---
 
 # 创建service
