@@ -44,7 +44,7 @@ cat <<EOF>/etc/fluent-bit/fluent-bit.conf
 EOF
 ```
 
-## 采集secure日志配置
+## 增加parser配置
 ```bash
 cat <<EOF>> /etc/fluent-bit/parsers.conf
 
@@ -55,7 +55,10 @@ cat <<EOF>> /etc/fluent-bit/parsers.conf
     Time_Key    time
     Time_Format %b %d %H:%M:%S
 EOF
+```
 
+## 采集secure日志配置
+```bash
 cat <<EOF> /etc/fluent-bit/secure-input.conf
 [INPUT]
     Name tail
