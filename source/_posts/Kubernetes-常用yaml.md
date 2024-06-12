@@ -94,41 +94,42 @@ data:
     input{
       kafka{
         bootstrap_servers => "192.168.1.9:9091,192.168.1.9:9092,192.168.1.9:9093"
-        topics => "k8s-apisix-logs"
-        consumer_threads => 50
+        topics => ["os-secure-logs", "os-messages-logs"]
+        consumer_threads => 1
         decorate_events => true
         codec => json
         auto_offset_reset => "latest"
      }
     }
-    filter {
-            mutate {
-                convert => ["request_length","integer"]
-                convert => ["duration","float"]
-                convert => ["body_bytes_sent","integer"]
-                convert => ["upstream_status","integer"]
-                convert => ["upstream_response_time","float"]
-                convert => ["request_time","float"]
-                convert => ["bytes_sent","integer"]
-                convert => ["status","integer"]
-            }
-            geoip {
-                source => "remote_addr"
-            }
+    filter{
+      ruby { 
+              code => "event.set('timestamp', event.get('@timestamp').time.localtime - 8*60*60)" 
+          }
+        mutate {
+            remove_field => ["@version", "@timestamp"]
+        }
     }
     output {
-      elasticsearch {
-        hosts => ["192.168.1.65:9200","192.168.1.150:9200","192.168.1.32:9200","192.168.1.44:9200","192.168.1.89:9200"]
-        user => "elastic"
-        password => "xxx"
-        index => "logstash-apisix-%{+YYYY.MM.dd}"
+      stdout { 
+         codec  => rubydebug {
+           metadata => true
+         }
       }
-      # DEBUG
-       #stdout { 
-        #codec  => rubydebug {
-        #metadata => true
-      #}
-  }
+      if "os-secure-logs" == [@metadata][kafka][topic] {
+        elasticsearch {
+          hosts => ["192.168.1.65:9200","192.168.1.150:9200","192.168.1.32:9200","192.168.1.44:9200","192.168.1.89:9200"]
+          user => "elastic"
+          password => "axzo@2021"
+          index => "logstash-os-secure-%{+YYYY.MM.dd}"
+        }
+      } else {
+        elasticsearch {
+          hosts => ["192.168.1.65:9200","192.168.1.150:9200","192.168.1.32:9200","192.168.1.44:9200","192.168.1.89:9200"]
+          user => "elastic"
+          password => "axzo@2021"
+          index => "logstash-os-messages-%{+YYYY.MM.dd}"
+        }
+      }
     }
   logstash.yml: |
     http.host: "0.0.0.0"
