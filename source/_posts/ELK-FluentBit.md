@@ -34,9 +34,9 @@ cat <<EOF>/etc/fluent-bit/fluent-bit.conf
 @INCLUDE secure-input.conf
 @INCLUDE secure-filter.conf
 @INCLUDE secure-output.conf
-@INCLUDE message-input.conf
-@INCLUDE message-filter.conf
-@INCLUDE message-output.conf
+@INCLUDE messages-input.conf
+@INCLUDE messages-filter.conf
+@INCLUDE messages-output.conf
 EOF
 ```
 
@@ -101,41 +101,41 @@ EOF
 
 ## 采集message kernel日志
 ```bash
-cat <<EOF>/etc/fluent-bit/message-input.conf
+cat <<EOF>/etc/fluent-bit/messages-input.conf
 [INPUT]
     Name tail
-    Path /var/log/message
-    Tag kube-message.*
-    DB                /var/log/flb_kube_message.db
+    Path /var/log/messages
+    Tag kube-messages.*
+    DB                /var/log/flb_kube_messages.db
     Mem_Buf_Limit     1MB
     Skip_Long_Lines   On
     Refresh_Interval  10
 EOF
 
-cat <<EOF> /etc/fluent-bit/message-filter.conf
+cat <<EOF> /etc/fluent-bit/messages-filter.conf
 [FILTER]
     Name grep
-    Match kube-message.*
+    Match kube-messages.*
     Regex log /.*kernel.*/
 
 [FILTER]
     Name parser
-    Match kube-message.*
+    Match kube-messages.*
     Key_Name log
     Parser axzo-os-log
 
 [FILTER]
     Name modify
-    Match kube-message.*
+    Match kube-messages.*
     Add IP $IP
 EOF
 
-cat <<EOF>/etc/fluent-bit/message-output.conf
+cat <<EOF>/etc/fluent-bit/messages-output.conf
 [OUTPUT]
     Name           kafka
-    Match          kube-message.*
+    Match          kube-messages.*
     Brokers        192.168.1.9:9092,192.168.1.9:9091,192.168.1.9:9093
-    Topics         os-message-logs
+    Topics         os-messages-logs
     Timestamp_Key  @timestamp
     Timestamp_Format iso8601
     Retry_Limit    false
