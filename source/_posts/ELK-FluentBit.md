@@ -147,3 +147,10 @@ cat <<EOF>/etc/fluent-bit/message-output.conf
     rdkafka.request.required.acks 1
 EOF
 ```
+
+# 启动
+```
+systemctl start fluent-bit
+systemctl enable fluent-bit
+systemctl status fluent-bit
+```
