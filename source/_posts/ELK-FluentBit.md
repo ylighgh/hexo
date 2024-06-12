@@ -20,6 +20,10 @@ cp /etc/fluent-bit/parsers.conf /etc/fluent-bit/fparsers.conf.default
 ```
 
 # 修改配置
+## 配置IP
+```bash
+export IP=x.x.x.x
+```
 
 ## 修改主配置文件
 ```bash
@@ -149,7 +153,7 @@ EOF
 ```
 
 # 启动
-```
+```bash
 systemctl start fluent-bit
 systemctl enable fluent-bit
 systemctl status fluent-bit
