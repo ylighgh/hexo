@@ -408,9 +408,16 @@ EOF
 # ELK
 
 ## ElasticSearch
-
+```bash
+harbor.axzo.cn/ops/elasticsearch:8.14.1
+```
 
 ## LogStash
-
+```bash
+harbor.axzo.cn/ops/logstash:8.14.1
+```
 
 ## Kibana
+```bash
+harbor.axzo.cn/ops/kibana:8.14.1
+```

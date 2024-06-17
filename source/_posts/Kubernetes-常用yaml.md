@@ -136,3 +136,25 @@ data:
     path.config: /usr/share/logstash/pipeline
 EOF
 ```
+
+
+# PVC
+```bash
+kubectl apply -f - <<EOF
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pro-apisix-plugins
+  namespace: pro-apisix
+  annotations:
+    volume.beta.kubernetes.io/storage-provisioner: everest-csi-provisioner
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: sfsturbo-k8s-sc
+  volumeMode: Filesystem
+EOF
+```
