@@ -5,7 +5,7 @@ tags: Linux
 categories: Linux
 ---
 
-# 批量删除pods
+# 批量删除指定状态的pods
 ```bash
 kubectl --kubeconfig gxq-config get pods -A|grep Evicted|awk '{print $1" "$2}'|while read LINE
 do
