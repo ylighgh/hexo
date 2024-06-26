@@ -9,12 +9,12 @@ categories: Kubernetes
 ![](/images/k8s/endpoint.png)
 
 ```bash
-kubect apply -f - <<EOF
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Service
 metadata:
-  name: axzo-test-rds-master
-  namespace: test
+  name: axzo-prd-rds-master
+  namespace: prod
 spec:
   ports:
   - port: 3306
@@ -22,22 +22,42 @@ spec:
     targetPort: 3306
   sessionAffinity: None
   type: ClusterIP
-EOF
-```
-
-# 创建Endpoint
-```bash
-kubect apply -f - <<EOF
+---
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: axzo-test-rds-master
-  namespace: test
+  name: axzo-prd-rds-master
+  namespace: prod
 subsets:
 - addresses:
-  - ip: 172.16.2.143
+  - ip: 192.168.1.99
   ports:
   - port: 3306
     protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: axzo-prd-rds-readonly
+  namespace: prod
+spec:
+  ports:
+  - port: 3306
+    protocol: TCP
+    targetPort: 3306
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: axzo-prd-rds-readonly
+  namespace: prod
+subsets:
+- addresses:
+  - ip: 192.168.1.62
+  ports:
+  - port: 3306
+    protocol: TCP    
 EOF
 ```
