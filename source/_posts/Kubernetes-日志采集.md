@@ -416,13 +416,10 @@ kind: Service
 metadata:
   name: elasticsearch
   namespace: logging
-  labels:
-    app: elasticsearch
 spec:
+  clusterIP: None
   ports:
-  - port: 9200
-    protocol: TCP
-    targetPort: db
+    - port: 9200
   selector:
     app: elasticsearch
 ---
@@ -434,8 +431,6 @@ metadata:
   namespace: logging
   labels:
     app: elasticsearch
-    kubernetes.io/cluster-service: "true"
-    addonmanager.kubernetes.io/mode: Reconcile
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -443,8 +438,6 @@ metadata:
   name: elasticsearch
   labels:
     app: elasticsearch
-    kubernetes.io/cluster-service: "true"
-    addonmanager.kubernetes.io/mode: Reconcile
 rules:
 - apiGroups:
   - ""
@@ -472,30 +465,12 @@ roleRef:
   name: elasticsearch
   apiGroup: ""
 ---
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: es-data
-  namespace: logging
-  annotations:
-    volume.beta.kubernetes.io/storage-provisioner: everest-csi-provisioner
-spec:
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 10Gi
-  storageClassName: nfs-client
-  volumeMode: Filesystem
----
 # Elasticsearch deployment itself
 apiVersion: apps/v1
 kind: StatefulSet #使用statefulset创建Pod
 metadata:
   name: elasticsearch #pod名称,使用statefulSet创建的Pod是有序号有顺序的
   namespace: logging  #命名空间
-  labels:
-    app: elasticsearch
 spec:
   replicas: 1 #副本数量,单节点
   selector:
@@ -505,7 +480,6 @@ spec:
     metadata:
       labels:
         app: elasticsearch
-        kubernetes.io/cluster-service: "true"
     spec:
       serviceAccountName: elasticsearch
       imagePullSecrets:
@@ -530,10 +504,6 @@ spec:
             memory: 500Mi
         ports:
         - containerPort: 9200
-          name: db
-          protocol: TCP
-        - containerPort: 9300
-          name: transport
           protocol: TCP
         volumeMounts:
         - name: es-data
@@ -549,7 +519,9 @@ spec:
         - name: "discovery.type"  #定义单节点类型
           value: "single-node"
         - name: ES_JAVA_OPTS #设置Java的内存参数，可以适当进行加大调整
-          value: "-Xms512m -Xmx2g" 
+          value: "-Xms512m -Xmx2g"
+        - name: "ELASTIC_PASSWORD"
+          value: "TvTOidLL3R9xEDN@"
 EOF
 ```
 
@@ -568,17 +540,14 @@ kind: Service
 metadata:
   name: kibana
   namespace: logging
-  labels:
-    k8s-app: kibana
 spec:
   type: NodePort #采用nodeport方式进行暴露，端口默认为25601
   ports:
   - port: 5601
     nodePort: 32601
     protocol: TCP
-    targetPort: ui
   selector:
-    k8s-app: kibana
+    app: kibana
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -586,16 +555,16 @@ metadata:
   name: kibana
   namespace: logging
   labels:
-    k8s-app: kibana
+    app: kibana
 spec:
   replicas: 1
   selector:
     matchLabels:
-      k8s-app: kibana
+      app: kibana
   template:
     metadata:
       labels:
-        k8s-app: kibana
+        app: kibana
     spec:
       imagePullSecrets:
         - name: harbor
@@ -614,10 +583,15 @@ spec:
             cpu: 100m
         env:
           - name: ELASTICSEARCH_HOSTS
-            value: http://elasticsearch:9200
+            value: "http://elasticsearch:9200"
+          - name: ELASTICSEARCH_URL
+            value: "http://elasticsearch:9200"
+          - name: ELASTICSEARCH_USERNAME
+            value: "kibana"
+          - name: ELASTICSEARCH_PASSWORD
+            value: "TvTOidLL3R9xEDN@"
         ports:
         - containerPort: 5601
-          name: ui
           protocol: TCP
         volumeMounts:
         - name: localtime
