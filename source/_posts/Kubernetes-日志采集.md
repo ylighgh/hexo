@@ -409,15 +409,219 @@ EOF
 
 ## ElasticSearch
 ```bash
-harbor.axzo.cn/ops/elasticsearch:8.14.1
+kubectl apply -f - <<EOF
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: logging
+  labels:
+    app: elasticsearch
+spec:
+  ports:
+  - port: 9200
+    protocol: TCP
+    targetPort: db
+  selector:
+    app: elasticsearch
+---
+# RBAC authn and authz
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: elasticsearch
+  namespace: logging
+  labels:
+    app: elasticsearch
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "services"
+  - "namespaces"
+  - "endpoints"
+  verbs:
+  - "get"
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: logging
+  name: elasticsearch
+  labels:
+    app: elasticsearch
+subjects:
+- kind: ServiceAccount
+  name: elasticsearch
+  namespace: logging
+  apiGroup: ""
+roleRef:
+  kind: ClusterRole
+  name: elasticsearch
+  apiGroup: ""
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: es-data
+  namespace: logging
+  annotations:
+    volume.beta.kubernetes.io/storage-provisioner: everest-csi-provisioner
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-client
+  volumeMode: Filesystem
+---
+# Elasticsearch deployment itself
+apiVersion: apps/v1
+kind: StatefulSet #使用statefulset创建Pod
+metadata:
+  name: elasticsearch #pod名称,使用statefulSet创建的Pod是有序号有顺序的
+  namespace: logging  #命名空间
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1 #副本数量,单节点
+  selector:
+    matchLabels:
+      app: elasticsearch #和pod template配置的labels相匹配
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+        kubernetes.io/cluster-service: "true"
+    spec:
+      serviceAccountName: elasticsearch
+      imagePullSecrets:
+        - name: harbor
+      volumes:
+      - name: es-data
+        persistentVolumeClaim:
+          claimName: es-data
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      containers:
+      - image: harbor.axzo.cn/ops/elasticsearch:8.14.1
+        name: elasticsearch
+        resources:
+          # need more cpu upon initialization, therefore burstable class
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            memory: 500Mi
+        ports:
+        - containerPort: 9200
+          name: db
+          protocol: TCP
+        - containerPort: 9300
+          name: transport
+          protocol: TCP
+        volumeMounts:
+        - name: es-data
+          mountPath: /usr/share/elasticsearch/data/   #挂载点
+        - name: localtime
+          readOnly: true
+          mountPath: /etc/localtime
+        env:
+        - name: "NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: "discovery.type"  #定义单节点类型
+          value: "single-node"
+        - name: ES_JAVA_OPTS #设置Java的内存参数，可以适当进行加大调整
+          value: "-Xms512m -Xmx2g" 
+EOF
 ```
 
 ## LogStash
 ```bash
+
 harbor.axzo.cn/ops/logstash:8.14.1
 ```
 
 ## Kibana
 ```bash
-harbor.axzo.cn/ops/kibana:8.14.1
+kubectl apply -f - <<EOF
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana
+  namespace: logging
+  labels:
+    k8s-app: kibana
+spec:
+  type: NodePort #采用nodeport方式进行暴露，端口默认为25601
+  ports:
+  - port: 5601
+    nodePort: 32601
+    protocol: TCP
+    targetPort: ui
+  selector:
+    k8s-app: kibana
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: logging
+  labels:
+    k8s-app: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: kibana
+  template:
+    metadata:
+      labels:
+        k8s-app: kibana
+    spec:
+      imagePullSecrets:
+        - name: harbor
+      volumes:
+      - name: localtime
+        hostPath:
+          path: /etc/localtime
+      containers:
+      - name: kibana
+        image: harbor.axzo.cn/ops/kibana:8.14.1
+        resources:
+          # need more cpu upon initialization, therefore burstable class
+          limits:
+            cpu: 1000m
+          requests:
+            cpu: 100m
+        env:
+          - name: ELASTICSEARCH_HOSTS
+            value: http://elasticsearch:9200
+        ports:
+        - containerPort: 5601
+          name: ui
+          protocol: TCP
+        volumeMounts:
+        - name: localtime
+          readOnly: true
+          mountPath: /etc/localtime
+EOF
 ```
