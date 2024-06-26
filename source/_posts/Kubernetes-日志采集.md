@@ -17,6 +17,9 @@ kubectl create ns logging
 # 消息队列
 
 ## Zookeeper
+
+### StatefulSet
+
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: apps/v1
@@ -42,7 +45,11 @@ spec:
               name: zookeeperclient
       imagePullSecrets:
         - name: harbor
----
+EOF
+```
+### Service 
+```bash
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -58,6 +65,8 @@ EOF
 ```
 
 ## Kafka
+
+### StatefulSet
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: apps/v1
@@ -90,7 +99,11 @@ spec:
               value: "zookeeper:2181"
             - name: ALLOW_PLAINTEXT_LISTENER
               value: "yes"
----
+EOF
+```
+### Service 
+```bash
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -117,8 +130,8 @@ kubectl exec -it kafka-0 -n logging -- /opt/bitnami/kafka/bin/kafka-topics.sh --
 
 # FluentBit
 
-## 配置
-```
+## ConfigMap
+```bash
 kubectl apply -f - <<EOF
 kind: ConfigMap
 apiVersion: v1
@@ -126,7 +139,7 @@ metadata:
   name: fluent-bit-config
   namespace: logging
   labels:
-    k8s-app: fluent-bit
+    app: fluent-bit
 data:
   filter.conf: |-
     [FILTER]
@@ -248,7 +261,7 @@ data:
         Time_Format %b %d %H:%M:%S
 EOF
 ```
-## Serviceaccount
+## ServiceAccount
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: v1
@@ -258,7 +271,7 @@ metadata:
   namespace: logging
 EOF
 ```
-## clusterroles
+## ClusterRole
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
@@ -278,7 +291,7 @@ rules:
 EOF
 ```
 
-## clusterrolebindings
+## ClusterRoleBinding
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: rbac.authorization.k8s.io/v1
@@ -296,7 +309,7 @@ subjects:
 EOF
 ```
 
-## 服务
+## DaemonSet
 ```bash
 kubectl apply -f - <<EOF
 kind: DaemonSet
@@ -305,19 +318,15 @@ metadata:
   name: fluent-bit
   namespace: logging
   labels:
-    k8s-app: fluent-bit-logging
-    kubernetes.io/cluster-service: 'true'
-    version: v1
+    app: fluent-bit-logging
 spec:
   selector:
     matchLabels:
-      k8s-app: fluent-bit-logging
+      app: fluent-bit-logging
   template:
     metadata:
       labels:
-        k8s-app: fluent-bit-logging
-        kubernetes.io/cluster-service: 'true'
-        version: v1
+        app: fluent-bit-logging
     spec:
       volumes:
         - name: varlog
@@ -408,6 +417,8 @@ EOF
 # ELK
 
 ## ElasticSearch
+
+### Service
 ```bash
 kubectl apply -f - <<EOF
 ---
@@ -422,8 +433,11 @@ spec:
     - port: 9200
   selector:
     app: elasticsearch
----
-# RBAC authn and authz
+EOF
+```
+### ServiceAccount
+```bash
+kubectl apply -f - <<EOF
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -431,7 +445,11 @@ metadata:
   namespace: logging
   labels:
     app: elasticsearch
----
+EOF
+```
+### ClusterRole
+```bash
+kubectl apply -f - <<EOF
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -447,7 +465,10 @@ rules:
   - "endpoints"
   verbs:
   - "get"
----
+```
+### ClusterRoleBinding
+```bash
+kubectl apply -f - <<EOF
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -464,8 +485,10 @@ roleRef:
   kind: ClusterRole
   name: elasticsearch
   apiGroup: ""
----
-# Elasticsearch deployment itself
+```
+### StatefulSet
+```bash 
+kubectl apply -f - <<EOF
 apiVersion: apps/v1
 kind: StatefulSet #使用statefulset创建Pod
 metadata:
@@ -526,6 +549,44 @@ EOF
 ```
 
 ## LogStash
+
+### ConfigMap
+```bash
+kubectl apply -f - <<EOF
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: logstash-os-configmap
+  namespace: logging
+data:
+  logstash.conf: |
+    input {
+       kafka{
+        bootstrap_servers => "kafka:9092"
+        topics => "axzo-linux-os"
+        consumer_threads => 10
+        decorate_events => true
+        codec => json
+        auto_offset_reset => "latest"
+      }
+    }
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch:9200"]
+        user => "elastic"
+        password => "TvTOidLL3R9xEDN@"
+        index => "axzo-log-os-%{+YYYY.MM.dd}"
+      }
+      stdout {
+        codec => rubydebug
+      }
+    }
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+EOF
+```
+### Deployment
 ```bash
 kubectl apply -f - <<EOF
 kind: Deployment
@@ -596,56 +657,13 @@ spec:
       maxSurge: 25%
   revisionHistoryLimit: 10
   progressDeadlineSeconds: 600
----
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: logstash-os-configmap
-  namespace: logging
-  managedFields:
-    - manager: cfe-apiserver
-      operation: Update
-      apiVersion: v1
-      time: '2024-06-26T05:51:50Z'
-      fieldsType: FieldsV1
-      fieldsV1:
-        f:data:
-          .: {}
-          f:logstash.conf: {}
-          f:logstash.yml: {}
-data:
-  logstash.conf: |
-    input {
-       kafka{
-        bootstrap_servers => "kafka:9092"
-        topics => "axzo-linux-os"
-        consumer_threads => 10
-        decorate_events => true
-        codec => json
-        auto_offset_reset => "latest"
-      }
-    }
-    output {
-      elasticsearch {
-        hosts => ["elasticsearch:9200"]
-        user => "elastic"
-        password => "TvTOidLL3R9xEDN@"
-        index => "axzo-log-os-%{+YYYY.MM.dd}"
-      }
-      stdout {
-        codec => rubydebug
-      }
-    }
-  logstash.yml: |
-    http.host: "0.0.0.0"
-    path.config: /usr/share/logstash/pipeline
 EOF
 ```
 
 ## Kibana
+### Service
 ```bash
 kubectl apply -f - <<EOF
----
 apiVersion: v1
 kind: Service
 metadata:
@@ -659,7 +677,11 @@ spec:
     protocol: TCP
   selector:
     app: kibana
----
+EOF
+```
+### Deployment
+```bash
+kubectl apply -f - <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
