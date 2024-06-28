@@ -14,3 +14,12 @@ do
     kubectl --kubeconfig gxq-config delete pod -n $namespace $pod
 done
 ```
+
+# 阿里云增加DNS解析
+```bash
+# A记录
+aliyun alidns AddDomainRecord --region cn-beijing --DomainName 'xx.cn' --Type A --RR 'www' --Value '1.1.1.1'
+
+# CNAME
+aliyun alidns AddDomainRecord --region cn-beijing --DomainName 'xx.cn' --Type CNAME --RR 'xxx' --Value 'bbb.yy.cn'
+```
