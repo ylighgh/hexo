@@ -11,3 +11,8 @@ categories: Kubectl
 ```bash
 kubectl create secret tls api-cdht-https --cert api-cdht.cdhtgycs.cn.pem --key api-cdht.cdhtgycs.cn.key -n prod
 ```
+
+## 扩缩容
+```bash
+kubectl scale deployment foo --replicas=0
+```
