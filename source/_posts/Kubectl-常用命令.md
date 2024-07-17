@@ -16,3 +16,26 @@ kubectl create secret tls api-cdht-https --cert api-cdht.cdhtgycs.cn.pem --key a
 ```bash
 kubectl scale deployment foo --replicas=0
 ```
+
+## 创建ServiceAccount并绑定Secret
+```bash
+kubectl apply -f <<EOF -
+apiVersion: v1
+automountServiceAccountToken: true
+kind: ServiceAccount
+metadata:
+  name: jenkins-blue
+  namespace: kube-ops
+secrets:
+- name: jenkins-blue
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jenkins-blue
+  namespace: kube-ops
+  annotations:
+    kubernetes.io/service-account.name: "jenkins-blue"
+type: kubernetes.io/service-account-token
+EOF
+```
