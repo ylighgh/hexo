@@ -23,3 +23,55 @@ aliyun alidns AddDomainRecord --region cn-beijing --DomainName 'xx.cn' --Type A 
 # CNAME
 aliyun alidns AddDomainRecord --region cn-beijing --DomainName 'xx.cn' --Type CNAME --RR 'xxx' --Value 'bbb.yy.cn'
 ```
+
+
+
+# 安装Node Expoter
+```bash
+# 一句话安装
+curl http://47.109.36.211:9090/install_node_expoter.sh | bash
+```
+
+```bash
+#!/bin/bash
+set -e  # Exit immediately if a command exits with a non-zero status
+
+# Define variables
+DOWNLOAD_URL="http://47.109.36.211:9090/node_exporter-1.8.2.linux-amd64.tar.gz"
+DOWNLOAD_DIR="/tmp/downloads"
+INSTALL_DIR="/opt/node_exporter"
+SERVICE_FILE="/etc/systemd/system/node_exporter.service"
+
+# Create necessary directories
+mkdir -p $DOWNLOAD_DIR $INSTALL_DIR
+
+# Download and extract node_exporter
+wget $DOWNLOAD_URL -O $DOWNLOAD_DIR/node_exporter.tar.gz
+tar xf $DOWNLOAD_DIR/node_exporter.tar.gz -C $DOWNLOAD_DIR
+mv $DOWNLOAD_DIR/node_exporter-*/node_exporter $INSTALL_DIR/
+rm -rf $DOWNLOAD_DIR/node_exporter*
+
+# Create systemd service file
+cat <<EOF > $SERVICE_FILE
+[Unit]
+Description=Prometheus Node Exporter
+Documentation=https://github.com/prometheus/node_exporter
+After=network-online.target
+
+[Service]
+User=root
+ExecStart=$INSTALL_DIR/node_exporter
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Reload systemd configuration and start the service
+systemctl daemon-reload
+systemctl enable --now node_exporter
+
+echo "Node Exporter installation and configuration completed"
+```
+
