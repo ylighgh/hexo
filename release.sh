@@ -3,7 +3,6 @@ read -p """Please enter the updated content:" content
 
 echo "=====================（1/2）====================================="
 cd /home/ylighgh/workspace/github/hexo/
-hexo clean && hexo generate
 changed_files=$(git diff --name-only -- source/_posts)
 current_time=$(date +"%Y-%m-%d %H:%M:%S")
 for file in $changed_files; do
@@ -11,6 +10,7 @@ for file in $changed_files; do
         sed -i "3s/.*/date: $current_time/" "$file"
     fi
 done
+hexo clean && hexo generate
 git add .
 git commit -m "$content"
 git pull
