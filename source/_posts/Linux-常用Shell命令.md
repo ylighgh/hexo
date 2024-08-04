@@ -24,6 +24,11 @@ aliyun alidns AddDomainRecord --region cn-beijing --DomainName 'xx.cn' --Type A 
 aliyun alidns AddDomainRecord --region cn-beijing --DomainName 'xx.cn' --Type CNAME --RR 'xxx' --Value 'bbb.yy.cn'
 ```
 
+# 删除指定日期的文件夹
+```bash
+find /path/to/directory -type f -mtime +7 -exec rm -rf {} \;
+```
+
 
 
 # 安装Node Expoter
