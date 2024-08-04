@@ -1,6 +1,6 @@
 ---
 title: Kubernetes-常用YAML
-date: 2024-05-29 22:26:00
+date: 2024-08-04 14:44:34
 tags: Kubernetes
 categories: Kubernetes
 ---
@@ -157,4 +157,103 @@ spec:
   storageClassName: sfsturbo-k8s-sc
   volumeMode: Filesystem
 EOF
+```
+
+# NFS-server
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    kubernetes.io/metadata.name: storage
+  name: storage
+---
+apiVersion: v1
+data:
+  exports: '/data/nfs *(rw,fsid=0,insecure,no_root_squash)'
+kind: ConfigMap
+metadata:
+  name: nfs-server-conf
+  namespace: storage
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: nfs-server
+  namespace: storage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-server
+  template:
+    metadata:
+      labels:
+        app: nfs-server
+    spec:
+      volumes:
+        - name: nfs-server-conf
+          configMap:
+            name: nfs-server-conf
+            defaultMode: 420
+        - name: nfs-data
+          persistentVolumeClaim:
+            claimName: nfs-data
+      containers:
+        - name: nfs-server
+          image: harbor.axzo.cn/library/nfs-server:v1
+          ports:
+            - name: nfs
+              containerPort: 2049
+              protocol: TCP
+            - name: mountd
+              containerPort: 20048
+              protocol: TCP
+            - name: rpcbind
+              containerPort: 111
+              protocol: TCP
+          volumeMounts:
+            - name: nfs-server-conf
+              readOnly: true
+              mountPath: /etc/exports
+              subPath: exports
+            - mountPath: /data/nfs
+              name: nfs-data
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-service
+  namespace: storage
+spec:
+  ports:
+    - name: nfs
+      port: 2049
+      protocol: TCP
+      targetPort: 2049
+    - name: mountd
+      port: 20048
+      protocol: TCP
+      targetPort: 20048
+    - name: rpcbind
+      port: 111
+      protocol: TCP
+      targetPort: 111
+  selector:
+    app: nfs-server
 ```
