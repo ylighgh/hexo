@@ -41,6 +41,13 @@ DOWNLOAD_URL="http://47.109.36.211:9090/node_exporter-1.8.2.linux-amd64.tar.gz"
 DOWNLOAD_DIR="/tmp/downloads"
 INSTALL_DIR="/opt/node_exporter"
 SERVICE_FILE="/etc/systemd/system/node_exporter.service"
+LOCK_FILE="/root/.node_exporter_install.lock"
+
+# Check if the lock file exists
+if [ -f $LOCK_FILE ]; then
+  echo "Node Exporter is already installed. Exiting."
+  exit 0
+fi
 
 # Create necessary directories
 mkdir -p $DOWNLOAD_DIR $INSTALL_DIR
@@ -71,6 +78,9 @@ EOF
 # Reload systemd configuration and start the service
 systemctl daemon-reload
 systemctl enable --now node_exporter
+
+# Create lock file
+touch $LOCK_FILE
 
 echo "Node Exporter installation and configuration completed"
 ```
