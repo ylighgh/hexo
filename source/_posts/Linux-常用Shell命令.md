@@ -1,6 +1,6 @@
 ---
 title: Linux-常用Shell命令
-date: 2024-06-11 14:12:17
+date: 2024-08-04 14:28:36
 tags: Linux
 categories: Linux
 ---
@@ -28,8 +28,6 @@ aliyun alidns AddDomainRecord --region cn-beijing --DomainName 'xx.cn' --Type CN
 ```bash
 find /path/to/directory -type f -mtime +7 -exec rm -rf {} \;
 ```
-
-
 
 # 安装Node Expoter
 ```bash
