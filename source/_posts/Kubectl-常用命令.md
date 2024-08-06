@@ -1,11 +1,21 @@
 ---
 title: Kubectl-常用命令
-date: 2024-06-11 14:12:17
+date: 2024-08-06 23:26:43
 tags: Kubectl
 categories: Kubectl
 ---
 
 # 常用命令
+
+## 自动补全
+```bash
+yum install -y bash-completion
+source /usr/share/bash-completion/bash_completion
+source <(kubectl completion bash)
+echo "source <(kubectl completion bash)" >> ~/.bashrc
+echo "alias k=kubectl" >> ~/.bashrc
+echo "complete -o default -F __start_kubectl k" >> ~/.bashrc
+```
 
 ## 创建证书
 ```bash
