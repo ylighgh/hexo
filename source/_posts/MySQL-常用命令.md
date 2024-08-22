@@ -1,6 +1,6 @@
 ---
 title: MySQL-常用命令
-date: 2024-06-25 14:12:17
+date: 2024-08-22 15:46:57
 tags: MySQL
 categories: MySQL
 ---
@@ -52,4 +52,9 @@ select * from user where user='xxx';
 # 创建用户
 ```sql
 CREATE USER 'finley'@'localhost' IDENTIFIED BY 'password';
+```
+
+# 授予权限
+```sql
+GRANT ALL ON `test-poseidon`.* TO 'test-poseidon'@'%' WITH GRANT OPTION;
 ```
