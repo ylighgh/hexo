@@ -1,6 +1,6 @@
 ---
 title: Kubernetes-基础
-date: 2024-05-28 22:44:21
+date: 2024-09-10 11:48:13
 tags: Kubernetes
 categories: Kubernetes
 ---
@@ -48,6 +48,15 @@ client向APIServer发送创建pod的请求：[资料参考](https://segmentfault
 > 4. kubelet发现pod调度到本节点，创建并运行pod的容器
 
 5. K8S 网络模型 
+
+|  对比项   | Terway  | Flannel  | Calico  |
+|  ----  | ----  | ----  | ----  |
+| 性能  | Pod地址即为VPC中地址,无NAT损耗支持独占ENI模式,几乎无损 |配合阿里云VPC路由,Pod地址为虚拟地址,存在NAT转换损耗 |Calico 使用纯三层路由，不依赖 NAT，支持 BGP 协议，性能较高，但在高流量环境下相对 Terway 可能有一定开销，尤其是在复杂路由场景中 |
+| 安全  | 支持使用网络策略Network Policy |不支持使用网络策略Network Policy |支持使用网络策略Network Policy，并提供高级的网络策略功能，如基于标签的访问控制和细粒度策略管理
+ |
+| 地址管理  | 无需按节点分配地址段,随用随分配,无地址浪费 |节点维度划分地址段,大规模集群下地址浪费多 |使用基于 BGP 路由的三层网络模式，IP 分配相对灵活，但配置复杂度高，在某些场景下可能需要进行子网规划
+ |
+| 负载均衡  | SLB后端直接对接Pod,支持业务无中断升级 |SLB后端不能直接对接Pod,需要通过NodePort转发 |支持通过 Service 或 Ingress 实现负载均衡，Pod 直接作为负载均衡后端，但由于网络封装（如 VXLAN/IPIP）可能带来一定开销 |
 
 
 6. K8S 其他面试题
